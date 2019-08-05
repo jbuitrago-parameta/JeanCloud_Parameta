@@ -14,21 +14,6 @@ import unittest
 import HtmlTestRunner
 import datetime
 
-os.chdir('G:\Mi unidad\Data\Copa\Validacion facturas')
-now = datetime.datetime.now()
-
-driver = webdriver.Chrome("C:\Python\Python37\chromedriver")
-tabla_facturas = pd.DataFrame(columns=['Supplier'], index = [0])
-comparacion = pd.DataFrame(columns=['Supplier'], index = [0])
-with open("Columnas Copa.txt") as reader:
-    for line in reader:
-        a =  str(line).replace('\n','')
-        tabla_facturas[a] = ""
-        comparacion[a] = ""
-
-insumo_UAT = pd.read_excel('Insumo UAT.xlsx', header = 0)
-testRunner_1=HtmlTestRunner.HTMLTestRunner(output="html_report_dir")
-
 def funcion_uno():
     ###Inicio de sesion
     driver.get('https://copaair-test.coupahost.com/sessions/support_login')
@@ -148,16 +133,93 @@ def funcion_uno():
                     prueba = prueba + 1
         if not encontrar:
             print('No se encontro el item %s'.format(item))
+    
+    
+
+    '''row_f, col_f = tabla_facturas.shape
+    for x in range(0,row_f):
+        comparacion.loc[x] = ''
+        for y in range(0,col_f):
+            if str(tabla_facturas.iloc[x,y]).strip() == str(insumo_UAT.iloc[x,y]).strip():
+                comparacion.iloc[x,y] = 'OK'
+            else:
+                comparacion.iloc[x,y] = str(insumo_UAT.iloc[x,y]) + "-" + str(tabla_facturas.iloc[x,y])
+    tabla_facturas.to_excel('Output Facturas.xlsx',header = True, encoding = 'utf-8', index=None)
+    #comparacion.to_excel('Resultado Comparacion.xlsx',header = True, encoding = 'utf-8', index=None)
+
+
+    contiene = driver.find_element_by_xpath('//*[@id="invoice_header_adv_cond_w"]/div/div/select')
+    contiene.send_keys('creado')
+    time.sleep(3)
+    id1 = 'conditions_' + str(contiene.get_attribute('id')).split('_')[1].strip() + '_created_by'
+    driver.find_element_by_id(id1).send_keys('PIF')
+    driver.find_element_by_xpath('//*[@class="table_condition_button"]/a[2]/img').click()
+    time.sleep(1)
+    contiene2 = driver.find_element_by_xpath('//*[@id="invoice_header_adv_cond_w"]/div/div[2]/select')
+    contiene2.send_keys('Estad')
+    time.sleep(3)
+    driver.find_element_by_xpath('//*[@class="condition_clause"]/select/option[11]').click()
+    driver.find_element_by_id('search_advanced_button_invoice_header').click()
+    time.sleep(2)
+    i=0
+    for t in range(3):
+        tbody = driver.find_element_by_id('invoice_header_tbody')
+        rows = tbody.find_elements_by_tag_name('tr')
+        for row in rows:
+            link = row.find_element_by_tag_name("td").find_element_by_tag_name("a").get_attribute("href")
+            tabla_url.loc[i,'url'] = link
+            i=i+1
+        try:
+            driver.find_element_by_link_text("Siguiente").click()
+        except:
+            print ("Se obtuvieron todas las url")
+            break
+    
+    for i in range(len(tabla_url)):
+        driver.get(tabla_url.loc[i,'url'])
+        wait.until(EC.element_to_be_clickable((By.ID, 'add_comment_link')))
+        tabla_facturas.loc[i,'N de factura'] = driver.find_element_by_id('invoice_invoice_number').text
+        tabla_facturas.loc[i,'Desde'] = driver.find_element_by_xpath('//*[@id="topHalf"]/div[1]/div[26]/time').text
+        tabla_facturas.loc[i,'Hasta'] = driver.find_element_by_xpath('//*[@id="topHalf"]/div[1]/div[27]/time').text
+        tabla_facturas.loc[i,'Suma Extended Price'] = driver.find_element_by_id('invoice_amount_line_price').text
+        tabla_facturas.loc[i,'Impuestos'] = driver.find_element_by_xpath('//*[@class="tax_section"]/span[2]/span[3]/div/span').text
+    .
+    tabla_facturas.to_excel('Resultado facturas.xlsx', header = True, index = None, encoding = 'utf-8')
+    print ('Exportacion exitosa. Fin de la validacion')'''
     driver.close()
 
-class Pruebas_Facturas(unittest.TestCase):
-    def test_valores(self):
-        for y in range(0,len(insumo_UAT)):
-            for x in list(insumo_UAT.columns):
-                nombre = str(insumo_UAT.loc[y,'Invoice #']) + " - " + str(x)
-                with self.subTest(Invoice = nombre):
-                    self.assertEqual(str(insumo_UAT.loc[y,x]),str(tabla_facturas.loc[y,x]))
+class TestSequense(unittest.TestCase):
+    pass
+
+
+def test_generator(a):
+    def test(self):
+        for x in list(insumo_UAT.columns):
+            nombre = str(x)
+            with self.subTest(Field = nombre):
+                self.assertEqual(str(insumo_UAT.loc[a,x]),str(tabla_facturas.loc[a,x]))
+    return test
 
 if __name__ == "__main__":
+    os.chdir('G:\Mi unidad\Data\Copa\Validacion facturas')
+    now = datetime.datetime.now()
+
+    driver = webdriver.Chrome("C:\Python\Python37\chromedriver")
+    tabla_facturas = pd.DataFrame(columns=['Supplier'], index = [0])
+    comparacion = pd.DataFrame(columns=['Supplier'], index = [0])
+    with open("Columnas Copa.txt") as reader:
+        for line in reader:
+            a =  str(line).replace('\n','')
+            tabla_facturas[a] = ""
+            comparacion[a] = ""
+
+    insumo_UAT = pd.read_excel('Insumo UAT.xlsx', header = 0)
+    testRunner_1=HtmlTestRunner.HTMLTestRunner(output="html_report_dir")
     funcion_uno()
+    a,b = insumo_UAT.shape
+    for x in range(a):
+        test_name = 'test_Invoice # ' + str(insumo_UAT.loc[x,'Invoice #'])
+        test_to_run = test_generator(x)
+        setattr(TestSequense, test_name, test_to_run)
     unittest.main(testRunner=testRunner_1)
+
